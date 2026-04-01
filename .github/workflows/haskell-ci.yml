@@ -90,9 +90,12 @@ jobs:
         apt-get update -y
         apt-get install -y autoconf build-essential zlib1g-dev libgmp-dev curl libncurses5 libtinfo5 libncurses5-dev libtinfo-dev git
         curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_INSTALL_NO_STACK=1 sh
-    - uses: actions/checkout@v3
+    - name: Checkout
+      run: |
+        git clone --depth 1 --branch ${{ github.head_ref || github.ref_name }} https://github.com/${{ github.repository }}.git work
     - name: Test
       run: |
         source ~/.ghcup/env
+        cd work
         cabal update
         cabal test
