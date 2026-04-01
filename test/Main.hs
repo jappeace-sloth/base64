@@ -84,6 +84,7 @@ tests = testGroup "Base64 Tests"
     , mkDecodeTree
       (second TS.fromText . T.decodeUtf8' . SBS.fromShort) tts64 sb64
     ]
+  , issue56RegressionTests
   ]
 
 -- ---------------------------------------------------------------- --
@@ -506,6 +507,29 @@ decodeWithVectors utf8 TextHarness{..} h t = testGroup "DecodeWith* unit tests"
       a @=? b
     ]
   ]
+
+-- | Regression tests for issue #56: segfault on 32-bit systems when
+-- encoding medium-sized binary data. The W64 inner loop reads 8 bytes
+-- via peekWord64BE but the boundary check was too loose, allowing
+-- out-of-bounds reads on i386.
+--
+issue56RegressionTests :: TestTree
+issue56RegressionTests = testGroup "Issue #56 regression (W64 loop boundary)"
+    [ testGroup "Boundary sizes around 6-byte chunk"
+      [ roundtripTest n | n <- [5, 6, 7, 8, 11, 12, 13, 14] ]
+    , testGroup "Larger sizes exercising W64 inner loop"
+      [ roundtripTest n | n <- [64, 128, 256, 512, 1024] ]
+    ]
+  where
+    roundtripTest :: Int -> TestTree
+    roundtripTest n = testCase (show n ++ " bytes") $ do
+      let bs :: BS.ByteString
+          bs = BS.pack $ map fromIntegral [0 .. n - 1 :: Int]
+          encoded :: Base64 'StdPadded BS.ByteString
+          encoded = B64.encodeBase64' bs
+          decoded :: Either T.Text BS.ByteString
+          decoded = B64.decodeBase64Untyped (extractBase64 encoded)
+      Right bs @=? decoded
 
 -- | Validity unit tests for the URL workflow
 --
