@@ -83,7 +83,7 @@ jobs:
   i386:
     runs-on: ubuntu-latest
     container:
-      image: i386/ubuntu:jammy
+      image: i386/ubuntu:bionic
     steps:
     - name: Install
       run: |
